@@ -95,8 +95,10 @@ func (t *DecoratedTask) getPrivateIp() string {
 	return ""
 }
 
-func (t *DecoratedTask) getPrometheusExporterPort(configuredPort int64, c *ecs.ContainerDefinition) int64 {
-	var mappedPort int64 = 0
+func (t *DecoratedTask) getPrometheusExporterPort(configuredPort int64, c *ecs.ContainerDefinition) (mappedPort int64) {
+	defer func() {
+		log.Printf("task configured port %d mapped %d", configuredPort, mappedPort)
+	}()
 	networkMode := aws.StringValue(t.TaskDefinition.NetworkMode)
 	if networkMode == "" || networkMode == ecs.NetworkModeNone {
 		// for network type: none, skipped directly
@@ -169,12 +171,20 @@ func (t *DecoratedTask) exportDockerLabelBasedTarget(config *ServiceDiscoveryCon
 	c *ecs.ContainerDefinition,
 	targets map[string]*PrometheusTarget) {
 
+	oldSize := len(targets)
+	defer func() {
+		newSize := len(targets)
+		log.Printf("I! Docker label size old %d new %d", oldSize, newSize)
+	}()
+
 	if !t.DockerLabelBased {
+		log.Printf("not docker label based")
 		return
 	}
 
 	configuredPortStr, ok := c.DockerLabels[config.DockerLabel.PortLabel]
 	if !ok {
+		log.Printf("skip because missing %s", config.DockerLabel.PortLabel)
 		// skip the container without matching sd_port_label
 		return
 	}
@@ -190,6 +200,7 @@ func (t *DecoratedTask) exportDockerLabelBasedTarget(config *ServiceDiscoveryCon
 	if mappedPort == 0 {
 		return
 	}
+	log.Printf("mapped port is %d", mappedPort)
 
 	metricsPath := defaultPrometheusMetricsPath
 	metricsPathLabel := ""
@@ -215,6 +226,11 @@ func (t *DecoratedTask) exportTaskDefinitionBasedTarget(config *ServiceDiscovery
 	ip string,
 	c *ecs.ContainerDefinition,
 	targets map[string]*PrometheusTarget) {
+	oldSize := len(targets)
+	defer func() {
+		newSize := len(targets)
+		log.Printf("I! task definition size old %d new %d", oldSize, newSize)
+	}()
 
 	if !t.TaskDefinitionBased {
 		return
@@ -300,6 +316,7 @@ func (t *DecoratedTask) exportServiceEndpointBasedTarget(config *ServiceDiscover
 func (t *DecoratedTask) ExporterInformation(config *ServiceDiscoveryConfig, dockerLabelRegex *regexp.Regexp, targets map[string]*PrometheusTarget) {
 	ip := t.getPrivateIp()
 	if ip == "" {
+		log.Printf("I! task does not have private %s", aws.StringValue(t.Task.TaskArn))
 		return
 	}
 	for _, c := range t.TaskDefinition.ContainerDefinitions {

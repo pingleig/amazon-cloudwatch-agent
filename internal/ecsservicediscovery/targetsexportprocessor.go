@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
+	"log"
 	"os"
 	"regexp"
 )
@@ -57,6 +58,7 @@ func (p *TargetsExportProcessor) Process(cluster string, taskList []*DecoratedTa
 	if err != nil {
 		return nil, newServiceDiscoveryError("Fail to marshal Prometheus Targets!", &err)
 	}
+	log.Printf("Discover output is %s", string(m))
 	p.stats.AddStatsCount(ExporterDiscoveredTargetCount, len(targetsArr))
 
 	err = ioutil.WriteFile(p.tmpResultFilePath, m, 0644)
