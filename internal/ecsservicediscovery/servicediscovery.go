@@ -29,6 +29,7 @@ func (sd *ServiceDiscovery) init() {
 		Region: sd.Config.TargetClusterRegion,
 	}
 	configProvider := credentialConfig.Credentials()
+	log.Printf("SD cluster is %s region is %s", sd.Config.TargetCluster, sd.Config.TargetClusterRegion)
 	sd.svcEcs = ecs.New(configProvider, aws.NewConfig().WithRegion(sd.Config.TargetClusterRegion).WithMaxRetries(AwsSdkLevelRetryCount))
 	sd.svcEc2 = ec2.New(configProvider, aws.NewConfig().WithRegion(sd.Config.TargetClusterRegion).WithMaxRetries(AwsSdkLevelRetryCount))
 

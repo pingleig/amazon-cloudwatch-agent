@@ -5,6 +5,7 @@ package ecsservicediscovery
 
 import (
 	"fmt"
+	"log"
 	"regexp"
 	"strconv"
 
@@ -69,6 +70,7 @@ func addExporterLabels(labels map[string]string, labelKey string, labelValue *st
 // Return "" when fail to get the private ip
 func (t *DecoratedTask) getPrivateIp() string {
 	if t.TaskDefinition.NetworkMode == nil {
+		log.Printf("W! NetworkMode is empty")
 		return ""
 	}
 
@@ -86,8 +88,10 @@ func (t *DecoratedTask) getPrivateIp() string {
 	}
 
 	if t.EC2Info != nil {
+		log.Printf("! EC2 Private IP is %s", t.EC2Info.PrivateIP)
 		return t.EC2Info.PrivateIP
 	}
+	log.Printf("W! not ec2 info found for task %s", aws.StringValue(t.Task.TaskArn))
 	return ""
 }
 
