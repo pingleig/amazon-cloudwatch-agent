@@ -7,6 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/hashicorp/golang-lru/simplelru"
+	"log"
 )
 
 const (
@@ -37,6 +38,7 @@ func NewTaskDefinitionProcessor(ecs *ecs.ECS, s *ProcessorStats) *TaskDefinition
 	return p
 }
 
+// Process fetches task definition based on task list
 func (p *TaskDefinitionProcessor) Process(cluster string, taskList []*DecoratedTask) ([]*DecoratedTask, error) {
 	defer func() {
 		p.stats.AddStatsCount(LRUCacheSizeTaskDefinition, p.taskDefCache.Len())
@@ -46,6 +48,7 @@ func (p *TaskDefinitionProcessor) Process(cluster string, taskList []*DecoratedT
 	for _, t := range taskList {
 		arn2Definition[aws.StringValue(t.Task.TaskDefinitionArn)] = nil
 	}
+	log.Printf("D! TaskDefinitionProcessor found %d task definitions", len(arn2Definition))
 
 	for k, _ := range arn2Definition {
 		if k == "" {
@@ -71,8 +74,9 @@ func (p *TaskDefinitionProcessor) Process(cluster string, taskList []*DecoratedT
 	for _, v := range taskList {
 		v.TaskDefinition = arn2Definition[aws.StringValue(v.Task.TaskDefinitionArn)]
 	}
-
+	log.Printf("D! TaskDefinitionProcessor before filter %d tasks", len(taskList))
 	taskList = filterNilTaskDefinitionTasks(taskList)
+	log.Printf("D! TaskDefinitionProcessor after filter %d tasks", len(taskList))
 	return taskList, nil
 }
 
@@ -81,6 +85,8 @@ func filterNilTaskDefinitionTasks(taskList []*DecoratedTask) []*DecoratedTask {
 	for _, v := range taskList {
 		if v.TaskDefinition != nil {
 			filteredTasks = append(filteredTasks, v)
+		} else {
+			log.Printf("D! Task has nil definition arn %s", aws.StringValue(v.Task.TaskArn))
 		}
 	}
 	return filteredTasks

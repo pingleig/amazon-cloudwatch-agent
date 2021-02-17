@@ -63,7 +63,7 @@ func splitMapKeys(a map[string]*EC2MetaData, size int) [][]string {
 }
 
 func (p *ContainerInstanceProcessor) handleContainerInstances(cluster string, batch []string, containerInstanceMap map[string]*EC2MetaData) error {
-	log.Printf("I! looking for container instances %v", batch)
+	log.Printf("D! ContainerInstance looking for container instances %v", batch)
 	ec2Id2containerInstanceIdMap := make(map[string]*string)
 	input := &ecs.DescribeContainerInstancesInput{
 		Cluster:            &cluster,
@@ -91,7 +91,7 @@ func (p *ContainerInstanceProcessor) handleContainerInstances(cluster string, ba
 			ec2Id2containerInstanceIdMap[aws.StringValue(ci.Ec2InstanceId)] = ci.ContainerInstanceArn
 		}
 	}
-	log.Printf("I! Got %d ec2 instance ids containerInstanceMap size is %d", len(ec2Ids), len(containerInstanceMap))
+	log.Printf("D! ContainerInstance Got %d ec2 instance ids containerInstanceMap size is %d", len(ec2Ids), len(containerInstanceMap))
 
 	// Get the EC2 Instances
 	ec2input := &ec2.DescribeInstancesInput{InstanceIds: ec2Ids}
@@ -102,11 +102,11 @@ func (p *ContainerInstanceProcessor) handleContainerInstances(cluster string, ba
 			return newServiceDiscoveryError("Failed to DescribeInstancesRequest", &ec2err)
 		}
 
-		log.Printf("I! Got %d ec2 reservations", len(ec2resp.Reservations))
+		log.Printf("D! ContainerInstance Got %d ec2 reservations", len(ec2resp.Reservations))
 
 		for _, rsv := range ec2resp.Reservations {
 			for _, ec2 := range rsv.Instances {
-				log.Printf("I! Got ec2InstanceId %s", aws.StringValue(ec2.InstanceId))
+				log.Printf("D! ContainerInstance Got ec2InstanceId %s", aws.StringValue(ec2.InstanceId))
 				ec2InstanceId := aws.StringValue(ec2.InstanceId)
 				if ec2InstanceId == "" {
 					continue
@@ -120,7 +120,7 @@ func (p *ContainerInstanceProcessor) handleContainerInstances(cluster string, ba
 				containerInstanceMap[*ciInstance].SubnetId = aws.StringValue(ec2.SubnetId)
 				containerInstanceMap[*ciInstance].VpcId = aws.StringValue(ec2.VpcId)
 				p.ec2MetaDataCache.Add(*ciInstance, containerInstanceMap[*ciInstance])
-				log.Printf("I! Update ec2MetaDataCache for %s", *ciInstance)
+				log.Printf("D! ContainerInstance  Update ec2MetaDataCache for %s", *ciInstance)
 			}
 		}
 

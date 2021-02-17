@@ -97,7 +97,7 @@ func (t *DecoratedTask) getPrivateIp() string {
 
 func (t *DecoratedTask) getPrometheusExporterPort(configuredPort int64, c *ecs.ContainerDefinition) (mappedPort int64) {
 	defer func() {
-		log.Printf("task configured port %d mapped %d", configuredPort, mappedPort)
+		log.Printf("D! DecortaedTask task configured port %d mapped %d", configuredPort, mappedPort)
 	}()
 	networkMode := aws.StringValue(t.TaskDefinition.NetworkMode)
 	if networkMode == "" || networkMode == ecs.NetworkModeNone {
@@ -174,20 +174,21 @@ func (t *DecoratedTask) exportDockerLabelBasedTarget(config *ServiceDiscoveryCon
 	oldSize := len(targets)
 	defer func() {
 		newSize := len(targets)
-		log.Printf("I! Docker label size old %d new %d", oldSize, newSize)
+		log.Printf("D! ExportDocker targets size old %d new %d", oldSize, newSize)
 	}()
 
 	if !t.DockerLabelBased {
-		log.Printf("not docker label based")
+		log.Printf("W! ExportDocker Taks is not docker label based %s", aws.StringValue(t.Task.TaskArn))
 		return
 	}
 
 	configuredPortStr, ok := c.DockerLabels[config.DockerLabel.PortLabel]
 	if !ok {
-		log.Printf("skip because missing %s", config.DockerLabel.PortLabel)
+		log.Printf("W! ExportDocker Skip because missing port label %s", config.DockerLabel.PortLabel)
 		// skip the container without matching sd_port_label
 		return
 	}
+	log.Printf("D! ExportDocker configuredPort is %q", aws.StringValue(configuredPortStr))
 
 	var exporterPort int64
 	if port, err := strconv.Atoi(aws.StringValue(configuredPortStr)); err != nil || port < 0 {
@@ -198,9 +199,10 @@ func (t *DecoratedTask) exportDockerLabelBasedTarget(config *ServiceDiscoveryCon
 	}
 	mappedPort := t.getPrometheusExporterPort(exporterPort, c)
 	if mappedPort == 0 {
+		log.Printf("W! ExportDocker mappedPort is 0")
 		return
 	}
-	log.Printf("mapped port is %d", mappedPort)
+	log.Printf("D! ExportDocker mappedPort is %d", mappedPort)
 
 	metricsPath := defaultPrometheusMetricsPath
 	metricsPathLabel := ""
@@ -210,6 +212,7 @@ func (t *DecoratedTask) exportDockerLabelBasedTarget(config *ServiceDiscoveryCon
 	}
 	targetKey := fmt.Sprintf("%s:%d%s", ip, mappedPort, metricsPath)
 	if _, ok := targets[targetKey]; ok {
+		log.Printf("D! ExportDocker target already existsm key %s", targetKey)
 		return
 	}
 
@@ -219,6 +222,7 @@ func (t *DecoratedTask) exportDockerLabelBasedTarget(config *ServiceDiscoveryCon
 	}
 
 	targets[targetKey] = t.generatePrometheusTarget(dockerLabelReg, c, ip, mappedPort, metricsPathLabel, customizedJobName)
+	log.Printf("D! ExportDocker added target %s", targetKey)
 }
 
 func (t *DecoratedTask) exportTaskDefinitionBasedTarget(config *ServiceDiscoveryConfig,
@@ -316,7 +320,7 @@ func (t *DecoratedTask) exportServiceEndpointBasedTarget(config *ServiceDiscover
 func (t *DecoratedTask) ExporterInformation(config *ServiceDiscoveryConfig, dockerLabelRegex *regexp.Regexp, targets map[string]*PrometheusTarget) {
 	ip := t.getPrivateIp()
 	if ip == "" {
-		log.Printf("I! task does not have private %s", aws.StringValue(t.Task.TaskArn))
+		log.Printf("W! Skip task without private ip  %s", aws.StringValue(t.Task.TaskArn))
 		return
 	}
 	for _, c := range t.TaskDefinition.ContainerDefinitions {

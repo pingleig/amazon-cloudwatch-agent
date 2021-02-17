@@ -22,6 +22,7 @@ func NewTaskProcessor(ecs *ecs.ECS, s *ProcessorStats) *TaskProcessor {
 	}
 }
 
+// Process fetches all the tasks within the cluster
 func (p *TaskProcessor) Process(cluster string, taskList []*DecoratedTask) ([]*DecoratedTask, error) {
 	req := &ecs.ListTasksInput{Cluster: &cluster}
 	for {
@@ -50,6 +51,7 @@ func (p *TaskProcessor) Process(cluster string, taskList []*DecoratedTask) ([]*D
 		}
 		req.NextToken = listTaskResp.NextToken
 	}
+	log.Printf("D! TaskProcessor got total %d tasks", len(taskList))
 	return taskList, nil
 }
 
