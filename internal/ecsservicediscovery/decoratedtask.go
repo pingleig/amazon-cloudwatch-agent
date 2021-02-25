@@ -5,6 +5,7 @@ package ecsservicediscovery
 
 import (
 	"fmt"
+	"log"
 	"regexp"
 	"strconv"
 
@@ -68,12 +69,19 @@ func addExporterLabels(labels map[string]string, labelKey string, labelValue *st
 // Get the private ip of the decorated task.
 // Return "" when fail to get the private ip
 func (t *DecoratedTask) getPrivateIp() string {
-	if t.TaskDefinition.NetworkMode == nil {
+	arn := aws.StringValue(t.Task.TaskArn)
+	mode := aws.StringValue(t.TaskDefinition.NetworkMode)
+	switch mode {
+	// Default network mode is bridge on EC2, so empty string is considered as bridge
+	case "", ecs.NetworkModeHost, ecs.NetworkModeBridge:
+		// For bridge, host network, private ip of task is host ip.
+		if t.EC2Info != nil {
+			return t.EC2Info.PrivateIP
+		}
+		log.Printf("W! private ip of ec2 instance not found for network mode %s and task %s", mode, arn)
 		return ""
-	}
-
-	// AWSVPC: Get Private IP from tasks->attachments (ElasticNetworkInterface -> privateIPv4Address)
-	if *t.TaskDefinition.NetworkMode == ecs.NetworkModeAwsvpc {
+	case ecs.NetworkModeAwsvpc:
+		// AWSVPC: Get Private IP from tasks->attachments (ElasticNetworkInterface -> privateIPv4Address)
 		for _, v := range t.Task.Attachments {
 			if aws.StringValue(v.Type) == "ElasticNetworkInterface" {
 				for _, d := range v.Details {
@@ -83,12 +91,16 @@ func (t *DecoratedTask) getPrivateIp() string {
 				}
 			}
 		}
+		log.Printf("W! private ip not found for awsvpc on task %s", arn)
+		return ""
+	case ecs.NetworkModeNone:
+		// No network access
+		log.Printf("D! task has no internet access %s", arn)
+		return ""
+	default:
+		log.Printf("W! Unknown ECS network mode %s for task %s", aws.StringValue(t.TaskDefinition.NetworkMode), arn)
+		return ""
 	}
-
-	if t.EC2Info != nil {
-		return t.EC2Info.PrivateIP
-	}
-	return ""
 }
 
 func (t *DecoratedTask) getPrometheusExporterPort(configuredPort int64, c *ecs.ContainerDefinition) int64 {
