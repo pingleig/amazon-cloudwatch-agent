@@ -171,6 +171,8 @@ func (mth *metricsTypeHandler) Handle(pmb PrometheusMetricBatch) (result Prometh
 		return result
 	}
 	for _, pm := range pmb {
+		log.Printf("magic job %q instance %q name %q", pm.tags[magicScrapeJobLabel], pm.tags[magicScrapeInstanceLabel], pm.tags[magicScrapeNameLabel])
+		log.Printf("metric name %q before relabel %q", pm.metricName, pm.metricNameBeforeRelabel)
 		// normalize the summary metric first, then if metric name == standardMetricName, it means it is not been normalized by summary
 		// , then normalize the counter suffix if it failed to find metadata.
 		standardMetricName := normalizeMetricName(pm.metricNameBeforeRelabel, histogramSummarySuffixes)

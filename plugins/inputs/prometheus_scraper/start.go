@@ -309,13 +309,14 @@ func reloadConfig(filename string, logger log.Logger, rls ...func(*config.Config
 				Regex:        relabel.MustNewRegexp("(.*)"),
 				Replacement:  "$1",
 				TargetLabel:  magicScrapeNameLabel,
-				SourceLabels: model.LabelNames{"__names__"},
+				SourceLabels: model.LabelNames{"__name__"},
 			},
 		}
 		// prepend so our relabel rule comes first
 		scrapeConfig.RelabelConfigs = append(relabelConfigs, scrapeConfig.RelabelConfigs...)
 		scrapeConfig.MetricRelabelConfigs = append(metricRelabelConfigs, scrapeConfig.MetricRelabelConfigs...)
 	}
+	level.Info(logger).Log("msg", "Add extra relabel config")
 
 	failed := false
 	for _, rl := range rls {
