@@ -17,11 +17,12 @@ import (
 type PrometheusMetricBatch []*PrometheusMetric
 
 type PrometheusMetric struct {
-	tags        map[string]string
-	metricName  string
-	metricValue float64
-	metricType  string
-	timeInMS    int64 // Unix time in milli-seconds
+	tags                    map[string]string
+	metricName              string
+	metricNameBeforeRelabel string
+	metricValue             float64
+	metricType              string
+	timeInMS                int64 // Unix time in milli-seconds
 }
 
 func (pm *PrometheusMetric) isValueValid() bool {
@@ -71,9 +72,10 @@ func (ma *metricAppender) Add(ls labels.Labels, t int64, v float64) (uint64, err
 	}
 
 	pm := &PrometheusMetric{
-		metricName:  metricName,
-		metricValue: v,
-		timeInMS:    t,
+		metricName:              metricName,
+		metricNameBeforeRelabel: ls.Get(magicScrapeNameLabel),
+		metricValue:             v,
+		timeInMS:                t,
 	}
 
 	pm.tags = labelMap

@@ -32,11 +32,13 @@ import (
 	"github.com/oklog/run"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/common/model"
 	"github.com/prometheus/common/promlog"
 	"github.com/prometheus/common/version"
 	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
 	sdConfig "github.com/prometheus/prometheus/discovery/config"
+	"github.com/prometheus/prometheus/pkg/relabel"
 	promRuntime "github.com/prometheus/prometheus/pkg/runtime"
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/prometheus/prometheus/storage"
@@ -260,6 +262,12 @@ func Start(configFilePath string, receiver storage.Appendable, shutDownChan chan
 	wg.Done()
 }
 
+const (
+	magicScrapeJobLabel      = "magic_cwagent_scrape_job"
+	magicScrapeInstanceLabel = "magic_cwagent_scrape_instance"
+	magicScrapeNameLabel     = "magic_cwagent_scrape_name"
+)
+
 func reloadConfig(filename string, logger log.Logger, rls ...func(*config.Config) error) (err error) {
 	level.Info(logger).Log("msg", "Loading configuration file", "filename", filename)
 
@@ -275,6 +283,38 @@ func reloadConfig(filename string, logger log.Logger, rls ...func(*config.Config
 	conf, err := config.LoadFile(filename)
 	if err != nil {
 		return errors.Wrapf(err, "couldn't load configuration (--config.file=%q)", filename)
+	}
+
+	// Based on hack for https://github.com/open-telemetry/opentelemetry-collector/issues/575#issuecomment-797719376
+	for _, scrapeConfig := range conf.ScrapeConfigs {
+		relabelConfigs := []*relabel.Config{
+			{
+				Action:       relabel.Replace,
+				Regex:        relabel.MustNewRegexp(".*"), // __address__ is always there, so we will find a match
+				Replacement:  scrapeConfig.JobName,        // value is hard coded job name
+				SourceLabels: model.LabelNames{"__address__"},
+				TargetLabel:  magicScrapeJobLabel, // creates a new magic label
+			},
+			{
+				Action:       relabel.Replace,
+				Regex:        relabel.MustNewRegexp("(.*)"), // __address__ is always there, so we will find a match
+				Replacement:  "$1",                          // value is actual __address__
+				TargetLabel:  magicScrapeInstanceLabel,      // creates a new magic label
+				SourceLabels: model.LabelNames{"__address__"},
+			},
+		}
+		metricRelabelConfigs := []*relabel.Config{
+			{
+				Action:       relabel.Replace,
+				Regex:        relabel.MustNewRegexp("(.*)"),
+				Replacement:  "$1",
+				TargetLabel:  magicScrapeNameLabel,
+				SourceLabels: model.LabelNames{"__names__"},
+			},
+		}
+		// prepend so our relabel rule comes first
+		scrapeConfig.RelabelConfigs = append(relabelConfigs, scrapeConfig.RelabelConfigs...)
+		scrapeConfig.MetricRelabelConfigs = append(metricRelabelConfigs, scrapeConfig.MetricRelabelConfigs...)
 	}
 
 	failed := false
