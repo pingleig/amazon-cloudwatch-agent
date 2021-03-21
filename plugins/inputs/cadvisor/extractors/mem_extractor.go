@@ -25,7 +25,7 @@ func (m *MemMetricExtractor) HasValue(info *cinfo.ContainerInfo) bool {
 
 func (m *MemMetricExtractor) GetValue(info *cinfo.ContainerInfo, containerType string) []*CAdvisorMetric {
 	var metrics []*CAdvisorMetric
-	if info.Spec.Labels[containerNameLable] == infraContainerName {
+	if isInfraContainer(info, containerType) {
 		return metrics
 	}
 

@@ -4,6 +4,7 @@
 package extractors
 
 import (
+	"github.com/aws/amazon-cloudwatch-agent/internal/containerinsightscommon"
 	cinfo "github.com/google/cadvisor/info/v1"
 )
 
@@ -37,4 +38,20 @@ func GetStats(info *cinfo.ContainerInfo) *cinfo.ContainerStats {
 	}
 	// When there is more than one stats point, always use the last one
 	return info.Stats[len(info.Stats)-1]
+}
+
+func isInfraContainer(info *cinfo.ContainerInfo, containerType string) bool {
+	if containerType != containerinsightscommon.TypeContainer {
+		return false
+	}
+
+	// Docker
+	switch info.Spec.Labels[containerNameLabel] {
+	case infraContainerName:
+		return true // docker
+	case "":
+		return true // containerd
+	default:
+		return false
+	}
 }

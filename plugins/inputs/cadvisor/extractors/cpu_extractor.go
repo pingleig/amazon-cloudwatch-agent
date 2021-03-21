@@ -29,7 +29,8 @@ func (c *CpuMetricExtractor) recordPreviousInfo(info *cInfo.ContainerInfo) {
 
 func (c *CpuMetricExtractor) GetValue(info *cInfo.ContainerInfo, containerType string) []*CAdvisorMetric {
 	var metrics []*CAdvisorMetric
-	if info.Spec.Labels[containerNameLable] == infraContainerName {
+	// Skip infra container and handles node, pod, other containers in pod
+	if isInfraContainer(info, containerType) {
 		return metrics
 	}
 
