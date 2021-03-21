@@ -30,6 +30,7 @@ func (m *MemMetricExtractor) GetValue(info *cinfo.ContainerInfo, containerType s
 	}
 
 	metric := newCadvisorMetric(containerType)
+	metric.cgroupPath = info.Name
 	curStats := GetStats(info)
 
 	metric.fields[MetricName(containerType, MemUsage)] = curStats.Memory.Usage

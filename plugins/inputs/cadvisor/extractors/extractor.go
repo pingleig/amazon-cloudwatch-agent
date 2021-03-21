@@ -27,6 +27,7 @@ type MetricExtractor interface {
 }
 
 type CAdvisorMetric struct {
+	cgroupPath string
 	fields     map[string]interface{}
 	tags       map[string]string
 	metricType string
@@ -68,7 +69,8 @@ func (c *CAdvisorMetric) Merge(src *CAdvisorMetric) {
 	// If there is any conflict, keep the fields with earlier timestamp
 	for k, v := range src.fields {
 		if _, ok := c.fields[k]; ok {
-			log.Printf("D! metric being merged has conflict in fields, src: %v, dest: %v \n", *src, *c)
+			log.Printf("D! metric being merged has conflict in fields, src: %v, dest: %v", *src, *c)
+			log.Printf("D! metric being merged has conflict in fields, paht src: %q, dest: %q", src.cgroupPath, c.cgroupPath)
 			if c.tags[containerinsightscommon.Timestamp] < src.tags[containerinsightscommon.Timestamp] {
 				continue
 			}

@@ -134,7 +134,7 @@ func processContainer(info *cinfo.ContainerInfo, detailMode bool, containerOrche
 			tags[ContainerIdkey] = path.Base(info.Name)
 			containerType = TypeContainer
 		}
-		log.Printf("D! container type %s pod path %s", containerType, podPath)
+		log.Printf("D! pod %q container %q type %s pod id %s path %s", podName, containerName, containerType, podId, podPath)
 	} else {
 		containerType = TypeNode
 		if containerOrchestrator == ECS {

@@ -41,6 +41,7 @@ func (c *CpuMetricExtractor) GetValue(info *cInfo.ContainerInfo, containerType s
 
 		if deltaCTimeInNano > MinTimeDiff {
 			metric := newCadvisorMetric(containerType)
+			metric.cgroupPath = info.Name
 
 			metric.fields[MetricName(containerType, CpuTotal)] = float64(curStats.Cpu.Usage.Total-preStats.Cpu.Usage.Total) / float64(deltaCTimeInNano) * decimalToMillicores
 			metric.fields[MetricName(containerType, CpuUser)] = float64(curStats.Cpu.Usage.User-preStats.Cpu.Usage.User) / float64(deltaCTimeInNano) * decimalToMillicores
