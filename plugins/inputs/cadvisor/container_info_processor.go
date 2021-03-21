@@ -103,7 +103,9 @@ func processContainer(info *cinfo.ContainerInfo, detailMode bool, containerOrche
 		namespace := info.Spec.Labels[namespaceLable]
 		podName := info.Spec.Labels[podNameLable]
 		podId := info.Spec.Labels[podIdLable]
-		if containerName == "" || namespace == "" || podName == "" {
+		// NOTE: containerName can be empty for pause container on containerd
+		// https://github.com/containerd/cri/issues/922#issuecomment-423729537
+		if namespace == "" || podName == "" {
 			return result, pKey
 		}
 
@@ -116,14 +118,18 @@ func processContainer(info *cinfo.ContainerInfo, detailMode bool, containerOrche
 		tags[PodIdKey] = podId
 		tags[K8sPodNameKey] = podName
 		tags[K8sNamespace] = namespace
-		if containerName != infraContainerName {
-			tags[ContainerNamekey] = containerName
-			tags[ContainerIdkey] = path.Base(info.Name)
-			containerType = TypeContainer
-		} else {
+
+		switch containerName {
+		// For docker, pause container name is set to POD while container does not set it.
+		// See https://github.com/aws/amazon-cloudwatch-agent/issues/188
+		case "", infraContainerName:
 			// NOTE: the pod here is only used by NetMetricExtractor,
 			// other pod info like CPU, Mem are dealt within in processPod.
 			containerType = TypePod
+		default:
+			tags[ContainerNamekey] = containerName
+			tags[ContainerIdkey] = path.Base(info.Name)
+			containerType = TypeContainer
 		}
 	} else {
 		containerType = TypeNode
