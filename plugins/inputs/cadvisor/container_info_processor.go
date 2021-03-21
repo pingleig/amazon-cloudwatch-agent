@@ -98,6 +98,8 @@ func processContainer(info *cinfo.ContainerInfo, detailMode bool, containerOrche
 		if !detailMode {
 			return result, pKey
 		}
+
+		log.Printf("D! %s labels %v envs %v", info.Name, info.Spec.Labels, info.Spec.Envs)
 		// Only a container has all these three labels set.
 		containerName := info.Spec.Labels[containerNameLable]
 		namespace := info.Spec.Labels[namespaceLable]
