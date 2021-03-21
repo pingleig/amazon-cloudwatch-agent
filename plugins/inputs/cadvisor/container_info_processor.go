@@ -128,7 +128,7 @@ func processContainer(info *cinfo.ContainerInfo, detailMode bool, containerOrche
 		case "", infraContainerName:
 			// NOTE: the pod here is only used by NetMetricExtractor,
 			// other pod info like CPU, Mem are dealt within in processPod.
-			containerType = TypePod
+			containerType = TypeInfraContainer
 		default:
 			tags[ContainerNamekey] = containerName
 			tags[ContainerIdkey] = path.Base(info.Name)

@@ -39,11 +39,14 @@ func (n *NetMetricExtractor) HasValue(info *cinfo.ContainerInfo) bool {
 func (n *NetMetricExtractor) GetValue(info *cinfo.ContainerInfo, containerType string) []*CAdvisorMetric {
 	var metrics []*CAdvisorMetric
 
-	// Just a protection here, there is no Container level Net metrics
-	// FIXME: broken in containerd
-	if (containerType == TypePod && info.Spec.Labels[containerNameLabel] != infraContainerName) || containerType == TypeContainer {
+	// No container level metrics and pod level metrics comes from InfraContainer.
+	if containerType == TypePod || containerType == TypeContainer {
 		log.Printf("D! skip net metric for %q %q %s", containerType, info.Spec.Labels[containerNameLabel], info.Name)
 		return metrics
+	}
+	// Rename type to pod because pod network metrics comes from infra container
+	if containerType == TypeInfraContainer {
+		containerType = TypePod
 	}
 	log.Printf("D! get net metirc for %q %q %s", containerType, info.Spec.Labels[containerNameLabel], info.Name)
 

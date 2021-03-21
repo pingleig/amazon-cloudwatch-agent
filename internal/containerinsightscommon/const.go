@@ -92,4 +92,5 @@ const (
 	TypeContainer       = "Container"
 	TypeContainerFS     = "ContainerFS"
 	TypeContainerDiskIO = "ContainerDiskIO"
+	TypeInfraContainer  = "InfraContainer"
 )

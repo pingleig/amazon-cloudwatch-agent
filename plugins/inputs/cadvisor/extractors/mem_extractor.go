@@ -26,7 +26,7 @@ func (m *MemMetricExtractor) HasValue(info *cinfo.ContainerInfo) bool {
 
 func (m *MemMetricExtractor) GetValue(info *cinfo.ContainerInfo, containerType string) []*CAdvisorMetric {
 	var metrics []*CAdvisorMetric
-	if isInfraContainer(info, containerType) {
+	if containerType == TypeInfraContainer {
 		log.Printf("D! mem skip infra container %s", info.Name)
 		return metrics
 	}

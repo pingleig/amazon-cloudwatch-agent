@@ -4,6 +4,7 @@
 package extractors
 
 import (
+	"log"
 	"time"
 
 	. "github.com/aws/amazon-cloudwatch-agent/internal/containerinsightscommon"
@@ -30,9 +31,11 @@ func (c *CpuMetricExtractor) recordPreviousInfo(info *cInfo.ContainerInfo) {
 func (c *CpuMetricExtractor) GetValue(info *cInfo.ContainerInfo, containerType string) []*CAdvisorMetric {
 	var metrics []*CAdvisorMetric
 	// Skip infra container and handles node, pod, other containers in pod
-	if isInfraContainer(info, containerType) {
+	if containerType == TypeInfraContainer {
+		log.Printf("D! cpu skip infra container %s", info.Name)
 		return metrics
 	}
+	log.Printf("D! CPU get type %q path %s", containerType, info.Name)
 
 	if preInfo, ok := c.preInfos.Get(info.Name); ok {
 		// When there is more than one stats point, always use the last one
