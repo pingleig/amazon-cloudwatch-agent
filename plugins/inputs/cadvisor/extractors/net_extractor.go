@@ -41,8 +41,10 @@ func (n *NetMetricExtractor) GetValue(info *cinfo.ContainerInfo, containerType s
 
 	// Just a protection here, there is no Container level Net metrics
 	if (containerType == TypePod && info.Spec.Labels[containerNameLable] != infraContainerName) || containerType == TypeContainer {
+		log.Printf("D! skip net metric for %q %q %s", containerType, info.Spec.Labels[containerNameLable], info.Name)
 		return metrics
 	}
+	log.Printf("D! get net metirc for %q %q %s", containerType, info.Spec.Labels[containerNameLable], info.Name)
 
 	if preInfo, ok := n.preInfos.Get(info.Name); ok {
 		curStats := GetStats(info)

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	. "github.com/aws/amazon-cloudwatch-agent/internal/containerinsightscommon"
 	"github.com/aws/amazon-cloudwatch-agent/plugins/inputs/cadvisor/extractors"
+	"log"
 )
 
 func mergeMetrics(metrics []*extractors.CAdvisorMetric) []*extractors.CAdvisorMetric {
@@ -15,6 +16,7 @@ func mergeMetrics(metrics []*extractors.CAdvisorMetric) []*extractors.CAdvisorMe
 	for _, metric := range metrics {
 		if metricKey := getMetricKey(metric); metricKey != "" {
 			if mergedMetric, ok := metricMap[metricKey]; ok {
+				log.Printf("D! merging %s", metricKey)
 				mergedMetric.Merge(metric)
 			} else {
 				metricMap[metricKey] = metric

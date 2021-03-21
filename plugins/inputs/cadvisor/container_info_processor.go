@@ -99,7 +99,7 @@ func processContainer(info *cinfo.ContainerInfo, detailMode bool, containerOrche
 			return result, pKey
 		}
 
-		log.Printf("D! %s labels %v envs %v", info.Name, info.Spec.Labels, info.Spec.Envs)
+		log.Printf("D! info.Name %s labels %v", info.Name, info.Spec.Labels)
 		// Only a container has all these three labels set.
 		containerName := info.Spec.Labels[containerNameLable]
 		namespace := info.Spec.Labels[namespaceLable]
@@ -117,7 +117,6 @@ func processContainer(info *cinfo.ContainerInfo, detailMode bool, containerOrche
 		// pod name:       /kubepods.slice/kubepods-burstable.slice/kubepods-burstable-pod04d39715_075e_4c7c_b128_67f7897c05b7.slice/
 		podPath := path.Dir(info.Name)
 		pKey = &podKey{cgroupPath: podPath, podName: podName, podId: podId, namespace: namespace}
-		log.Printf("D! pod path is %s", podPath)
 
 		tags[PodIdKey] = podId
 		tags[K8sPodNameKey] = podName
@@ -135,6 +134,7 @@ func processContainer(info *cinfo.ContainerInfo, detailMode bool, containerOrche
 			tags[ContainerIdkey] = path.Base(info.Name)
 			containerType = TypeContainer
 		}
+		log.Printf("D! container type %s pod path %s", containerType, podPath)
 	} else {
 		containerType = TypeNode
 		if containerOrchestrator == ECS {
@@ -168,6 +168,7 @@ func processPod(info *cinfo.ContainerInfo, podKeys map[string]podKey) []*extract
 		log.Printf("D! not pod %s", info.Name)
 		return result
 	}
+	log.Printf("D! pod %s is %s", podKey.podName, info.Name)
 
 	tags := map[string]string{}
 	tags[PodIdKey] = podKey.podId
