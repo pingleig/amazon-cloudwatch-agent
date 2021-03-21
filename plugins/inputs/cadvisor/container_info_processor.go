@@ -103,6 +103,7 @@ func processContainer(info *cinfo.ContainerInfo, detailMode bool, containerOrche
 		namespace := info.Spec.Labels[namespaceLable]
 		podName := info.Spec.Labels[podNameLable]
 		podId := info.Spec.Labels[podIdLable]
+		log.Printf("D! ns %q pod %q container %q", namespace, podName, containerName)
 		// NOTE: containerName can be empty for pause container on containerd
 		// https://github.com/containerd/cri/issues/922#issuecomment-423729537
 		if namespace == "" || podName == "" {
@@ -110,10 +111,11 @@ func processContainer(info *cinfo.ContainerInfo, detailMode bool, containerOrche
 		}
 
 		// Pod's cgroup path is parent for a container.
-		// contianer name: /kubepods.slice/kubepods-burstable.slice/kubepods-burstable-pod04d39715_075e_4c7c_b128_67f7897c05b7.slice/docker-57b3dabd69b94beb462244a0c15c244b509adad0940cdcc67ca079b8208ec1f2.scope
+		// container name: /kubepods.slice/kubepods-burstable.slice/kubepods-burstable-pod04d39715_075e_4c7c_b128_67f7897c05b7.slice/docker-57b3dabd69b94beb462244a0c15c244b509adad0940cdcc67ca079b8208ec1f2.scope
 		// pod name:       /kubepods.slice/kubepods-burstable.slice/kubepods-burstable-pod04d39715_075e_4c7c_b128_67f7897c05b7.slice/
 		podPath := path.Dir(info.Name)
 		pKey = &podKey{cgroupPath: podPath, podName: podName, podId: podId, namespace: namespace}
+		log.Printf("D! pod path is %s", podPath)
 
 		tags[PodIdKey] = podId
 		tags[K8sPodNameKey] = podName
@@ -159,8 +161,9 @@ func processPod(info *cinfo.ContainerInfo, podKeys map[string]podKey) []*extract
 		return result
 	}
 
-	podKey := getPodKey(info, podKeys)
-	if podKey == nil {
+	podKey, ok := podKeys[info.Name]
+	if !ok {
+		log.Printf("D! not pod %s", info.Name)
 		return result
 	}
 
@@ -181,16 +184,6 @@ func processPod(info *cinfo.ContainerInfo, podKeys map[string]podKey) []*extract
 		ele.AddTags(tags)
 	}
 	return result
-}
-
-func getPodKey(info *cinfo.ContainerInfo, podKeys map[string]podKey) *podKey {
-	key := info.Name
-
-	if v, ok := podKeys[key]; ok {
-		return &v
-	}
-
-	return nil
 }
 
 // Check if it's a container running inside container, caller will drop the metric when return value is true.
