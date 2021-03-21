@@ -4,6 +4,7 @@
 package extractors
 
 import (
+	"log"
 	"time"
 
 	. "github.com/aws/amazon-cloudwatch-agent/internal/containerinsightscommon"
@@ -26,8 +27,10 @@ func (m *MemMetricExtractor) HasValue(info *cinfo.ContainerInfo) bool {
 func (m *MemMetricExtractor) GetValue(info *cinfo.ContainerInfo, containerType string) []*CAdvisorMetric {
 	var metrics []*CAdvisorMetric
 	if isInfraContainer(info, containerType) {
+		log.Printf("D! mem skip infra container %s", info.Name)
 		return metrics
 	}
+	log.Printf("D! mem get type %q path %s", containerType, info.Name)
 
 	metric := newCadvisorMetric(containerType)
 	metric.cgroupPath = info.Name
